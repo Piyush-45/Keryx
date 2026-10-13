@@ -8,8 +8,8 @@ Assumes one full-time builder with AI-assisted coding. Tick boxes as work lands.
 - [ ] Architecture written (docs/architecture.md) and reviewed
 - [x] Tenant model + Postgres RLS design
 - [x] Agent config JSON Schema (versioned)
-- [ ] Provider registry interface + fallback order
-- [ ] Call event model
+- [x] Provider registry interface + fallback order
+- [x] Call event model
 - [ ] Latency budget per stage; region choice
 - [ ] Recording/transcript storage + retention plan
 - [x] Repo scaffold: api/, workers/, dashboard/, packages/shared/, CI with lint + tests
