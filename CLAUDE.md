@@ -29,11 +29,14 @@ data back from every call. Voice quality is table stakes; outcomes and data are 
 
 ## Commands
 <!-- Fill in during Phase 0 scaffolding, then keep current. -->
+- Local setup (brew Postgres 16 + Redis, roles, DBs): see docs/local-setup.md
+- DB provisioning (idempotent): `psql -d postgres -f scripts/db/init.sql`
 - API dev: `cd api && uv run fastapi dev`
 - Voice worker: `cd workers/voice && uv run python -m worker`
 - Dashboard: `cd dashboard && pnpm dev`
 - Tests: `uv run pytest` (Python) · `pnpm test` (dashboard)
-- Migrations: `cd api && uv run alembic upgrade head`
+- Migrations: `cd api && uv run alembic upgrade head` (runs as `vp_migrator`; the app connects as `vp_app`)
+- Codegen after editing the agent config schema: `make codegen` (CI fails if stale)
 
 ## Non-negotiable rules
 - **Tenant isolation:** every tenant-owned table has `org_id`; every query goes through the

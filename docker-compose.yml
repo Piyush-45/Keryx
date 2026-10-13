@@ -1,15 +1,20 @@
-# Local dev infra only. Not used in production.
+# OPTIONAL. The default local setup is Homebrew (docs/local-setup.md).
+# This gives the same layout in containers: vp_dev + vp_test databases, owned by vp_migrator,
+# with the non-superuser vp_app role, provisioned by scripts/db/init.sql on first start.
+# The same .env works with either setup. Stop brew services first to free ports 5432/6379.
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: vp
-      POSTGRES_PASSWORD: vp_local_dev
-      POSTGRES_DB: vp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_local_dev
+      POSTGRES_DB: postgres
     ports: ["5432:5432"]
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vp"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 10
   redis:

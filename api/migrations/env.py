@@ -6,7 +6,8 @@ from sqlalchemy import engine_from_config, pool
 from app.settings import get_settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# Migrations run as the owner role, never as the app role.
+config.set_main_option("sqlalchemy.url", get_settings().migration_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

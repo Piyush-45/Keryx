@@ -7,7 +7,7 @@ Assumes one full-time builder with AI-assisted coding. Tick boxes as work lands.
 - [ ] Pick 1–2 launch industries; list 15–20 target businesses
 - [ ] Architecture written (docs/architecture.md) and reviewed
 - [ ] Tenant model + Postgres RLS design
-- [ ] Agent config JSON Schema (versioned) — v1 draft in review
+- [x] Agent config JSON Schema (versioned)
 - [ ] Provider registry interface + fallback order
 - [ ] Call event model
 - [ ] Latency budget per stage; region choice
