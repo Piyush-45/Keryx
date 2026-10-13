@@ -33,7 +33,7 @@ jobs:
           PGPASSWORD: postgres_ci
       - name: Local dev .env (test DB URLs for vp_app / vp_migrator)
         run: cp .env.example .env
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.0  # upstream publishes no floating v10 tag
         with:
           enable-cache: true
       - run: uv python install
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.0  # upstream publishes no floating v10 tag
         with:
           enable-cache: true
       - run: uv python install
