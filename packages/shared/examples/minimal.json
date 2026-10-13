@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "language": ["en-US"],
+  "persona": { "name": "Sam", "prompt": "You answer questions about store opening hours: 9am to 6pm, Monday to Saturday." },
+  "greeting": "Hi, thanks for calling. How can I help?",
+  "flow": {
+    "initial_state": "answer",
+    "states": [{ "id": "answer", "task_prompt": "Answer the caller's question about opening hours." }]
+  },
+  "voice": {
+    "stt": { "provider": "deepgram:nova-3", "fallback": ["sarvam"] },
+    "llm": { "provider": "openai:gpt-4.1-mini", "fallback": ["anthropic:claude-haiku-5-5"] },
+    "tts": { "provider": "cartesia:sonic-en-1", "fallback": ["elevenlabs:rachel"] }
+  }
+}

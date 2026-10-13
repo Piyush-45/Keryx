@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vp:agent-config:1",
+  "title": "AgentConfig",
+  "description": "Versioned configuration for one agent version. Workers build the call pipeline from this; there is no per-company code. Cross-references (state ids, tool names, template variables) are checked by vp_shared.agent_config.validate_agent_config, not by this schema alone.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "language", "persona", "greeting", "flow", "voice"],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this schema the config was written against. Workers reject versions they do not know.",
+      "const": "1"
+    },
+    "language": {
+      "description": "BCP-47 locales the agent speaks. The first entry is the primary language.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/locale" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "persona": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "prompt"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "prompt": {
+          "description": "System prompt. May use {variable} placeholders declared in `variables`.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        }
+      }
+    },
+    "variables": {
+      "description": "Placeholders available as {name} in greeting and prompts. Filled from campaign CSV columns or the inbound caller's contact record.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/variable" },
+      "default": []
+    },
+    "greeting": {
+      "description": "First line the agent speaks. May use {variable} placeholders.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "flow": { "$ref": "#/$defs/flow" },
+    "voice": { "$ref": "#/$defs/voice" },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tool" },
+      "default": []
+    },
+    "extraction_fields": {
+      "description": "IDs of rows in the extraction_fields table to extract after the call.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/uuid" },
+      "uniqueItems": true,
+      "default": []
+    },
+    "transfer": { "$ref": "#/$defs/transfer" },
+    "turn": { "$ref": "#/$defs/turn" },
+    "recording": { "$ref": "#/$defs/recording" },
+    "limits": { "$ref": "#/$defs/limits" }
+  },
+
+  "$defs": {
+    "identifier": {
+      "description": "snake_case identifier used for state ids, tool names and variable names.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "locale": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}-[A-Z]{2}$",
+      "examples": ["hi-IN", "en-IN", "en-US"]
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "e164": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$"
+    },
+
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "$ref": "#/$defs/identifier" },
+        "description": { "type": "string", "maxLength": 500 },
+        "required": {
+          "description": "If true, a campaign cannot start unless this variable is mapped to a column.",
+          "type": "boolean",
+          "default": false
+        },
+        "default": { "type": "string", "maxLength": 500 }
+      }
+    },
+
+    "flow": {
+      "description": "Call states (maps onto Pipecat Flows). A single-state flow is a plain conversational agent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initial_state", "states"],
+      "properties": {
+        "initial_state": { "$ref": "#/$defs/identifier" },
+        "states": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/state" },
+          "minItems": 1,
+          "maxItems": 50
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "task_prompt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "task_prompt": {
+          "description": "What the agent must accomplish in this state. Added to the persona prompt.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "tools": {
+          "description": "Names of tools callable in this state.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true,
+          "default": []
+        },
+        "next": {
+          "description": "States reachable from this one. Empty means the call can only end or transfer from here.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+
+    "voice": {
+      "description": "Provider choice. Either a named preset, or explicit stt/llm/tts. A preset may be combined with per-kind overrides. Every explicit provider must declare at least one fallback.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "description": "Platform-defined preset name, e.g. india-standard.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "stt": { "$ref": "#/$defs/sttChoice" },
+        "llm": { "$ref": "#/$defs/llmChoice" },
+        "tts": { "$ref": "#/$defs/ttsChoice" }
+      },
+      "anyOf": [
+        { "required": ["preset"] },
+        { "required": ["stt", "llm", "tts"] }
+      ]
+    },
+    "sttSpec": {
+      "description": "vendor or vendor:model, e.g. deepgram:nova-3, sarvam.",
+      "type": "string",
+      "pattern": "^(deepgram|sarvam)(:[A-Za-z0-9._/@-]+)?$"
+    },
+    "llmSpec": {
+      "description": "vendor or vendor:model, e.g. openai:gpt-4.1-mini, anthropic:claude-haiku-5-5.",
+      "type": "string",
+      "pattern": "^(openai|gemini|anthropic)(:[A-Za-z0-9._/@-]+)?$"
+    },
+    "ttsSpec": {
+      "description": "vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka.",
+      "type": "string",
+      "pattern": "^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$"
+    },
+    "sttChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "fallback"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/sttSpec" },
+        "fallback": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sttSpec" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "llmChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "fallback"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/llmSpec" },
+        "fallback": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/llmSpec" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 }
+      }
+    },
+    "ttsChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "fallback"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/ttsSpec" },
+        "fallback": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ttsSpec" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+
+    "tool": {
+      "oneOf": [
+        { "$ref": "#/$defs/httpTool" },
+        { "$ref": "#/$defs/calendarTool" },
+        { "$ref": "#/$defs/endCallTool" }
+      ]
+    },
+    "toolCommon": {
+      "type": "object",
+      "required": ["type", "name", "description"],
+      "properties": {
+        "name": { "$ref": "#/$defs/identifier" },
+        "description": {
+          "description": "Shown to the LLM to decide when to call the tool.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "filler_line": {
+          "description": "Spoken while a slow tool runs, e.g. 'One moment, checking that for you.'",
+          "type": "string",
+          "maxLength": 300
+        },
+        "timeout_ms": { "type": "integer", "minimum": 100, "maximum": 30000, "default": 5000 }
+      }
+    },
+    "httpTool": {
+      "description": "Calls a tenant HTTPS endpoint. Credentials come from an integration (encrypted at rest); there is deliberately no field for inline headers or secrets.",
+      "allOf": [{ "$ref": "#/$defs/toolCommon" }],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "http" },
+        "url": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2048 },
+        "method": { "enum": ["GET", "POST", "PUT", "PATCH"], "default": "POST" },
+        "parameters": {
+          "description": "JSON Schema (object) for the arguments the LLM must supply.",
+          "type": "object",
+          "required": ["type"],
+          "properties": { "type": { "const": "object" } }
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["integration_id"],
+          "properties": { "integration_id": { "$ref": "#/$defs/uuid" } }
+        }
+      },
+      "required": ["url", "parameters"]
+    },
+    "calendarTool": {
+      "allOf": [{ "$ref": "#/$defs/toolCommon" }],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "calendar" },
+        "integration_id": { "$ref": "#/$defs/uuid" },
+        "action": { "enum": ["check_slots", "book", "reschedule", "cancel"] }
+      },
+      "required": ["integration_id", "action"]
+    },
+    "endCallTool": {
+      "description": "Lets the agent hang up politely when the task is done or the caller asks.",
+      "allOf": [{ "$ref": "#/$defs/toolCommon" }],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "end_call" }
+      }
+    },
+
+    "transfer": {
+      "description": "Handoff to a human. When set, the worker exposes a transfer tool to the LLM.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "when"],
+      "properties": {
+        "number": { "$ref": "#/$defs/e164" },
+        "when": {
+          "description": "Natural-language condition, e.g. 'caller asks for a human'.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "mode": { "enum": ["warm", "cold"], "default": "warm" }
+      }
+    },
+    "turn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow_barge_in": { "type": "boolean", "default": true },
+        "end_of_turn_ms": {
+          "description": "Silence after speech before the turn is considered over.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3000,
+          "default": 250
+        }
+      }
+    },
+    "recording": {
+      "description": "Omit to not record. When enabled, a disclosure line is required.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "disclosure_line": {
+          "description": "Spoken at call start when recording is enabled.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "if": { "properties": { "enabled": { "const": true } } },
+      "then": { "required": ["disclosure_line"] }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_call_seconds": { "type": "integer", "minimum": 30, "maximum": 3600, "default": 600 },
+        "silence_timeout_s": { "type": "integer", "minimum": 2, "maximum": 60, "default": 8 }
+      }
+    }
+  }
+}
