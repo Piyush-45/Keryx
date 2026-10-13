@@ -5,18 +5,15 @@ JSON Schema covers shape; `validate_agent_config` adds the rules the schema cann
 the dashboard calls it through the API rather than reimplementing it in TypeScript.
 """
 
-import json
 import re
 from collections import Counter
 from collections.abc import Iterable
-from dataclasses import dataclass
 from functools import cache
-from importlib import resources
-from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from vp_shared._schemas import SchemaError, load_schema_file
 from vp_shared.generated.agent_config import AgentConfig
 from vp_shared.providers import PRESETS
 
@@ -24,18 +21,8 @@ SCHEMA_VERSION = "1"
 SCHEMA_FILENAME = "agent_config.schema.json"
 
 _PLACEHOLDER = re.compile(r"\{([a-z][a-z0-9_]*)\}")
-# Repo layout: packages/shared/<schema>, this file at packages/shared/python/vp_shared/.
-_REPO_SCHEMA = Path(__file__).resolve().parents[2] / SCHEMA_FILENAME
 
-
-@dataclass(frozen=True)
-class ConfigError:
-    path: str
-    """JSONPath of the offending value, e.g. `$.voice.tts.fallback[0]`."""
-    message: str
-
-    def __str__(self) -> str:
-        return f"{self.path}: {self.message}"
+ConfigError = SchemaError
 
 
 class InvalidAgentConfigError(ValueError):
@@ -44,13 +31,9 @@ class InvalidAgentConfigError(ValueError):
         super().__init__("; ".join(str(e) for e in errors))
 
 
-@cache
 def load_schema() -> dict[str, Any]:
-    """Return the agent config JSON Schema (bundled in the wheel, or read from the repo)."""
-    bundled = resources.files("vp_shared").joinpath(SCHEMA_FILENAME)
-    text = bundled.read_text() if bundled.is_file() else _REPO_SCHEMA.read_text()
-    schema: dict[str, Any] = json.loads(text)
-    return schema
+    """Return the agent config JSON Schema."""
+    return load_schema_file(SCHEMA_FILENAME)
 
 
 @cache

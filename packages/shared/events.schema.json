@@ -1,0 +1,899 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vp:call-event:1",
+  "title": "CallEvent",
+  "description": "Events emitted during and after a call (decision 0007). Envelope + typed payload per `type`. Rules the schema cannot express are checked by vp_shared.events.validate_event.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/callStartedEvent"
+    },
+    {
+      "$ref": "#/$defs/turnEvent"
+    },
+    {
+      "$ref": "#/$defs/toolCallEvent"
+    },
+    {
+      "$ref": "#/$defs/transferEvent"
+    },
+    {
+      "$ref": "#/$defs/providerFallbackEvent"
+    },
+    {
+      "$ref": "#/$defs/callEndedEvent"
+    },
+    {
+      "$ref": "#/$defs/extractionDoneEvent"
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "e164": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "kind": {
+      "enum": [
+        "stt",
+        "llm",
+        "tts"
+      ]
+    },
+    "providerSpec": {
+      "type": "string",
+      "pattern": "^[a-z]+(:[A-Za-z0-9._/@-]+)?$",
+      "maxLength": 200
+    },
+    "offsetMs": {
+      "description": "Milliseconds since call start (recording time zero).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "callStartedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "from_number",
+        "to_number",
+        "agent_version_id",
+        "campaign_id",
+        "contact_id",
+        "telephony",
+        "language",
+        "providers"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "inbound",
+            "outbound",
+            "web"
+          ]
+        },
+        "from_number": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/e164"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to_number": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/e164"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent_version_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "campaign_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contact_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "telephony": {
+          "enum": [
+            "plivo",
+            "twilio",
+            "webrtc"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}-[A-Z]{2}$"
+        },
+        "providers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "stt",
+            "llm",
+            "tts"
+          ],
+          "properties": {
+            "stt": {
+              "$ref": "#/$defs/providerSpec"
+            },
+            "llm": {
+              "$ref": "#/$defs/providerSpec"
+            },
+            "tts": {
+              "$ref": "#/$defs/providerSpec"
+            }
+          },
+          "description": "Providers actually in use at call start (after any startup fallback)."
+        }
+      }
+    },
+    "userSide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "start_ms",
+        "end_ms"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "start_ms": {
+          "$ref": "#/$defs/offsetMs"
+        },
+        "end_ms": {
+          "$ref": "#/$defs/offsetMs"
+        }
+      },
+      "description": "What the caller said in this turn, with offsets for syncing to the recording."
+    },
+    "agentSide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "start_ms",
+        "end_ms",
+        "interrupted"
+      ],
+      "properties": {
+        "text": {
+          "description": "What the agent actually spoke (truncated at barge-in).",
+          "type": "string",
+          "maxLength": 10000
+        },
+        "start_ms": {
+          "$ref": "#/$defs/offsetMs"
+        },
+        "end_ms": {
+          "$ref": "#/$defs/offsetMs"
+        },
+        "interrupted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "turnTimings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eot_ms",
+        "stt_final_ms",
+        "llm_ttft_ms",
+        "tts_ttfb_ms",
+        "v2v_ms"
+      ],
+      "properties": {
+        "eot_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "stt_final_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "llm_ttft_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "tts_ttfb_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "v2v_ms": {
+          "description": "Caller stops speaking -> agent first audio. Null without a user side.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "description": "Per-stage latency (architecture section 7). Null when a stage did not happen."
+    },
+    "turnPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "state_id",
+        "user",
+        "agent",
+        "timings"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "state_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/userSide"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/agentSide"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timings": {
+          "$ref": "#/$defs/turnTimings"
+        }
+      },
+      "description": "One exchange. `user` is null for the greeting or agent-initiated speech; `agent` is null when the caller spoke again before a reply. At least one side is present (checked by validate_event)."
+    },
+    "toolCallPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "tool_type",
+        "state_id",
+        "args",
+        "status",
+        "start_ms",
+        "duration_ms",
+        "filler_spoken",
+        "result_summary",
+        "error"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "tool_type": {
+          "enum": [
+            "http",
+            "calendar",
+            "end_call",
+            "transfer"
+          ]
+        },
+        "state_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "error",
+            "timeout"
+          ]
+        },
+        "start_ms": {
+          "$ref": "#/$defs/offsetMs"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filler_spoken": {
+          "type": "boolean"
+        },
+        "result_summary": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "transferPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "to_number",
+        "reason",
+        "outcome",
+        "at_ms"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "warm",
+            "cold"
+          ]
+        },
+        "to_number": {
+          "$ref": "#/$defs/e164"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "outcome": {
+          "enum": [
+            "connected",
+            "failed",
+            "no_answer",
+            "canceled"
+          ]
+        },
+        "at_ms": {
+          "$ref": "#/$defs/offsetMs"
+        }
+      }
+    },
+    "providerFallbackPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "from_spec",
+        "to_spec",
+        "reason",
+        "detail",
+        "at_ms"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "from_spec": {
+          "$ref": "#/$defs/providerSpec"
+        },
+        "to_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/providerSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "enum": [
+            "startup",
+            "error",
+            "latency"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "at_ms": {
+          "$ref": "#/$defs/offsetMs"
+        }
+      },
+      "description": "A provider was skipped or replaced. to_spec null = chain exhausted."
+    },
+    "usageUnits": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "audio_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cached_input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "characters": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "usageItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "spec",
+        "units"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "spec": {
+          "$ref": "#/$defs/providerSpec"
+        },
+        "units": {
+          "$ref": "#/$defs/usageUnits"
+        }
+      }
+    },
+    "callEndedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ended_by",
+        "duration_ms",
+        "recording_ref",
+        "usage"
+      ],
+      "properties": {
+        "ended_by": {
+          "enum": [
+            "caller",
+            "agent",
+            "timeout",
+            "error",
+            "transfer",
+            "system"
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recording_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1024
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/usageItem"
+          }
+        }
+      }
+    },
+    "extractionDonePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "results",
+        "low_confidence",
+        "review_needed"
+      ],
+      "properties": {
+        "results": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "low_confidence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "review_needed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "callStartedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "call.started"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/callStartedPayload"
+        }
+      },
+      "title": "CallStarted"
+    },
+    "turnEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "turn"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/turnPayload"
+        }
+      },
+      "title": "Turn"
+    },
+    "toolCallEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "tool_call"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/toolCallPayload"
+        }
+      },
+      "title": "ToolCall"
+    },
+    "transferEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "transfer"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/transferPayload"
+        }
+      },
+      "title": "Transfer"
+    },
+    "providerFallbackEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "provider.fallback"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/providerFallbackPayload"
+        }
+      },
+      "title": "ProviderFallback"
+    },
+    "callEndedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "call.ended"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/callEndedPayload"
+        }
+      },
+      "title": "CallEnded"
+    },
+    "extractionDoneEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "v",
+        "org_id",
+        "call_id",
+        "seq",
+        "ts",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "const": "extraction.done"
+        },
+        "v": {
+          "const": 1
+        },
+        "org_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "call_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "seq": {
+          "description": "Per-call order, starting at 0. Post-call producers continue from the last persisted seq.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock time the event was created."
+        },
+        "payload": {
+          "$ref": "#/$defs/extractionDonePayload"
+        }
+      },
+      "title": "ExtractionDone"
+    }
+  }
+}

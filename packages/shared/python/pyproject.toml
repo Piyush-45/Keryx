@@ -3,10 +3,10 @@ name = "vp-shared"
 version = "0.0.0"
 description = "Shared schemas (agent config, event types) for Python services."
 requires-python = ">=3.12,<3.13"
-dependencies = ["pydantic>=2.9", "jsonschema>=4.23"]
+dependencies = ["pydantic>=2.9", "jsonschema>=4.23", "redis>=5.2"]
 
 [dependency-groups]
-dev = ["types-jsonschema"]
+dev = ["types-jsonschema", "fakeredis>=2.26"]
 
 [build-system]
 requires = ["hatchling"]
@@ -15,6 +15,7 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["vp_shared"]
 
-# Ship the authoritative schema inside the wheel; in the repo it is read from packages/shared/.
+# Ship the authoritative schemas inside the wheel; in the repo it is read from packages/shared/.
 [tool.hatch.build.targets.wheel.force-include]
 "../agent_config.schema.json" = "vp_shared/agent_config.schema.json"
+"../events.schema.json" = "vp_shared/events.schema.json"

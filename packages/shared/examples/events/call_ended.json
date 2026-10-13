@@ -1,0 +1,46 @@
+{
+  "id": "00000000-0000-4000-8000-000000000007",
+  "type": "call.ended",
+  "v": 1,
+  "org_id": "5f0c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f",
+  "call_id": "7a8b9c0d-1e2f-4a3b-9c4d-5e6f7a8b9c0d",
+  "seq": 6,
+  "ts": "2026-10-13T10:00:06.000000+00:00",
+  "payload": {
+    "ended_by": "transfer",
+    "duration_ms": 31000,
+    "recording_ref": "recordings/2026/10/13/7a8b9c0d.wav",
+    "usage": [
+      {
+        "kind": "stt",
+        "spec": "sarvam",
+        "units": {
+          "audio_seconds": 31.0
+        }
+      },
+      {
+        "kind": "llm",
+        "spec": "openai:gpt-4.1-mini",
+        "units": {
+          "input_tokens": 2400,
+          "output_tokens": 180,
+          "cached_input_tokens": 1800
+        }
+      },
+      {
+        "kind": "tts",
+        "spec": "sarvam:anushka",
+        "units": {
+          "characters": 160
+        }
+      },
+      {
+        "kind": "tts",
+        "spec": "elevenlabs:21m00Tcm4TlvDq8ikWAM",
+        "units": {
+          "characters": 40
+        }
+      }
+    ]
+  }
+}
