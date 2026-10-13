@@ -49,5 +49,11 @@ async def tenant_session(
         def _scope(_s: Session, _tx: SessionTransaction, connection: Connection) -> None:
             connection.execute(_SET_ORG, {"org_id": org})
 
-        async with session.begin():
+        # Explicit commit/rollback rather than `session.begin()`: callers may commit mid-block,
+        # and the session then autobegins a new (re-scoped) transaction.
+        try:
             yield session
+            await session.commit()
+        except BaseException:
+            await session.rollback()
+            raise

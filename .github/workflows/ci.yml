@@ -15,8 +15,24 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - name: Provision roles and databases (same script as local setup)
+        run: psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d postgres -f scripts/db/init.sql
+        env:
+          PGPASSWORD: postgres_ci
+      - name: Local dev .env (test DB URLs for vp_app / vp_migrator)
+        run: cp .env.example .env
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
