@@ -37,8 +37,9 @@ flowchart LR
 
 ## 2. Call lifecycle
 
-1. **Inbound:** telephony webhook → API resolves `phone_number → agent_version` → assigns a worker →
-   worker connects media stream.
+1. **Inbound:** telephony webhook → verify provider signature → `resolve_inbound_number(dialed e164)`
+   returns the owning `org_id` only → open `tenant_session(org_id)` → load `phone_number → agent_version`
+   under RLS → assign a worker → worker connects media stream (decision 0005, "Resolvers").
    **Outbound:** campaign scheduler picks the next eligible contact (window, concurrency, retries,
    compliance) → places call via telephony API → same worker path on answer.
 2. Worker builds pipeline from config: VAD/turn detection → STT → LLM (+ tools, Flows state) → TTS.
@@ -51,20 +52,36 @@ flowchart LR
 
 ## 3. Multi-tenancy
 
+Details and rationale: decisions 0002 and 0005.
+
 - Tenant = `organization`. Every tenant-owned row has `org_id`.
-- Postgres row-level security keyed on `app.current_org` set per request/job.
+- Postgres RLS (ENABLE + FORCE) on every table. Policies compare `org_id` to `app_current_org()`,
+  which reads `app.current_org`. `vp_db.session.tenant_session(org_id)` sets it transaction-locally
+  at the start of every transaction; with no org set, nothing matches (fail closed).
+- Roles: `vp_migrator` owns tables and runs Alembic; `vp_app` (API + workers) is not superuser, not
+  owner, NOBYPASSRLS, DML only. Local provisioning: `scripts/db/init.sql`.
+- Tenant tables have `UNIQUE (org_id, id)`; FKs between tenant tables are composite
+  `(org_id, x_id)` so a row can't reference another org's row. Org FKs are `ON DELETE RESTRICT`.
+- **Entering a tenant before the org is known** (inbound calls, third-party webhooks, schedulers):
+  authenticate the request, call a narrow `SECURITY DEFINER` resolver that maps one key to an
+  `org_id` only (`resolve_inbound_number(e164)`, `resolve_webhook_endpoint(token)`,
+  `list_active_org_ids()`), then open a normal `tenant_session`. Resolvers are owned by a NOLOGIN
+  BYPASSRLS role `vp_resolver`, pin `search_path`, and are executable only by `vp_app`.
 - API auth resolves user → membership → org; workers act with the org of the call.
 - Per-tenant settings: provider presets, BYOK keys (encrypted), retention days, PII redaction, calling windows.
 
 ## 4. Data model (first cut)
 
+All tenant tables also have `UNIQUE (org_id, id)`, composite FKs and the standard RLS policy.
+
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| organizations | id, name, region, settings_json | tenant root |
-| users / memberships | user_id, org_id, role | owner, admin, member |
+| organizations | id, name, region (`in`/`us`/`eu`, default `in`), settings | tenant root; visible only to itself. **Built (migration 0001).** |
+| users | id, email (unique, case-insensitive), name | global identity; readable via membership in the current org. **Built.** |
+| memberships | id, org_id, user_id, role | owner, admin, member; unique (org_id, user_id). **Built.** |
 | agents | id, org_id, name, industry_template | logical agent |
 | agent_versions | id, agent_id, version, config_json, published_at | immutable; calls pin a version |
-| phone_numbers | id, org_id, e164, provider, series, agent_id | 140/160 series stored |
+| phone_numbers | id, org_id, e164, provider, series, agent_id, status | 140/160 series stored; **e164 globally unique** (one number → one org); resolved by `resolve_inbound_number` |
 | contacts | id, org_id, e164, attributes_json, consent, dnd_status | dedupe on (org_id, e164) |
 | campaigns | id, org_id, agent_version_id, schedule_json, retry_json, concurrency, status | |
 | campaign_contacts | campaign_id, contact_id, row_vars_json, attempts, state, last_outcome | one row per CSV row |

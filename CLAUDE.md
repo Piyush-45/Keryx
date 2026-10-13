@@ -57,8 +57,10 @@ data back from every call. Voice quality is table stakes; outcomes and data are 
 ## Code conventions
 - Python: type hints everywhere, ruff + mypy clean, async I/O, small modules.
 - TypeScript: strict mode, server components by default, zod for API response parsing.
-- Tests: every bug fix adds a test; tenant-isolation tests for every new table.
-- Migrations: one Alembic migration per schema change, never edit a merged migration.
+- Tests: every bug fix adds a test; tenant-isolation tests for every new table (`api/tests/tenancy/`,
+  run as `vp_app` against `vp_test`; catalog guards there fail on any table without forced RLS).
+- Migrations: one Alembic migration per schema change, never edit a merged migration. Tenant tables:
+  `org_id` + `UNIQUE (org_id, id)` + composite FKs + `vp_db.rls.enable_tenant_rls(table)` (decision 0005).
 
 ## How to work (every session)
 1. Read docs/progress.md, then propose a short plan before writing code. Wait for approval on anything touching schema, tenancy or providers.
