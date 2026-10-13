@@ -1,4 +1,4 @@
-# Voice Agent Platform
+# Keryx — Voice Agent Platform
 
 Multi-tenant voice agent platform: companies create AI phone agents that do real work on calls
 (book, qualify, verify, update CRM), run outbound campaigns from CSV/Excel, and get structured
