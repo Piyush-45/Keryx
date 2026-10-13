@@ -7,12 +7,12 @@ Assumes one full-time builder with AI-assisted coding. Tick boxes as work lands.
 - [ ] Pick 1–2 launch industries; list 15–20 target businesses
 - [ ] Architecture written (docs/architecture.md) and reviewed
 - [ ] Tenant model + Postgres RLS design
-- [ ] Agent config JSON Schema (versioned)
+- [ ] Agent config JSON Schema (versioned) — v1 draft in review
 - [ ] Provider registry interface + fallback order
 - [ ] Call event model
 - [ ] Latency budget per stage; region choice
 - [ ] Recording/transcript storage + retention plan
-- [ ] Repo scaffold: api/, workers/, dashboard/, packages/shared/, CI with lint + tests
+- [x] Repo scaffold: api/, workers/, dashboard/, packages/shared/, CI with lint + tests
 
 ## Phase 1 — Core voice engine (weeks 2–5)
 - [ ] Pipeline factory: config JSON → running Pipecat pipeline
