@@ -18,6 +18,7 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 from vp_shared.generated.agent_config import AgentConfig
+from vp_shared.providers import PRESETS
 
 SCHEMA_VERSION = "1"
 SCHEMA_FILENAME = "agent_config.schema.json"
@@ -97,6 +98,11 @@ def _reference_errors(config: dict[str, Any]) -> list[ConfigError]:
         for tool in state.get("tools", []):
             if tool not in tools:
                 errors.append(ConfigError(f"$.flow.states[{i}].tools", f"unknown tool '{tool}'"))
+
+    preset = config["voice"].get("preset")
+    if preset is not None and preset not in PRESETS:
+        known = ", ".join(sorted(PRESETS))
+        errors.append(ConfigError("$.voice.preset", f"unknown preset '{preset}' (known: {known})"))
 
     for kind in ("stt", "llm", "tts"):
         choice = config["voice"].get(kind)
