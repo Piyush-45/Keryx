@@ -80,13 +80,13 @@ All tenant tables also have `UNIQUE (org_id, id)`, composite FKs and the standar
 | users | id, email (unique, case-insensitive), name | global identity; readable via membership in the current org. **Built.** |
 | memberships | id, org_id, user_id, role | owner, admin, member; unique (org_id, user_id). **Built.** |
 | agents | id, org_id, name, industry_template | logical agent |
-| agent_versions | id, agent_id, version, config_json, published_at | immutable; calls pin a version |
+| agent_versions | id, agent_id, version, config_json, resolved_voice, published_at | immutable; calls pin a version; `resolved_voice` = providers resolved at publish (0006) |
 | phone_numbers | id, org_id, e164, provider, series, agent_id, status | 140/160 series stored; **e164 globally unique** (one number → one org); resolved by `resolve_inbound_number` |
 | contacts | id, org_id, e164, attributes_json, consent, dnd_status | dedupe on (org_id, e164) |
 | campaigns | id, org_id, agent_version_id, schedule_json, retry_json, concurrency, status | |
 | campaign_contacts | campaign_id, contact_id, row_vars_json, attempts, state, last_outcome | one row per CSV row |
-| calls | id, org_id, agent_version_id, campaign_id?, contact_id?, direction, status, started_at, ended_at, cost_json | |
-| call_events | id, call_id, type, ts, payload_json | turn, tool_call, transfer, latency timings |
+| calls | id, org_id, agent_version_id?, campaign_id?, contact_id?, direction, status, from/to number, started_at, ended_at, ended_by, duration_ms, cost | **Built (migration 0002).** Created by the API before the worker starts; start/end filled from events |
+| call_events | id (event id), org_id, call_id, seq, type, v, ts, payload | **Built.** Unique (org_id, call_id, seq); composite FK to calls; written only by the event persister (0007) |
 | extraction_fields | id, org_id, agent_id, name, type, question, options, regex | typed definitions |
 | call_results | call_id, field_id, value, confidence, reasoning, reviewed_by? | extractions + dispositions |
 | integrations | id, org_id, kind, credentials_enc, settings_json | calendar, CRM, n8n |
@@ -113,17 +113,43 @@ The JSON Schema in `packages/shared/` is authoritative; this is illustrative.
 
 ## 6. Provider registry
 
-```python
-class STT(Protocol): ...
-class LLM(Protocol): ...
-class TTS(Protocol): ...
+Decision 0006. Code: `vp_shared.providers` (catalog, presets, resolution; no Pipecat) and
+`workers/voice/worker/providers/` (registry, chains, adapters).
 
-registry.build(kind="tts", spec="cartesia:voice-id", org=org)  # resolves keys (platform or BYOK)
+```python
+resolved = resolve_voice(config["voice"])          # at publish; stored on the agent version
+chain = registry.chain("tts", resolved.tts, BuildContext(org_id=..., language="hi-IN"))
+built, fallbacks = await chain.build_first()       # primary, else next; fallbacks -> events
+built, more = await chain.build_next(built.spec, "error", "websocket closed")  # runtime failover
 ```
 
-- One adapter per vendor, one file each.
-- Fallback order per kind (e.g. TTS: preset → secondary) triggered on error or latency breach.
-- Each adapter reports cost units so `usage_records` can price every call.
+- One adapter per vendor and kind, one file each; only adapters import vendor services.
+- Presets resolve to explicit providers at publish; published versions never follow preset edits.
+- Every provider has a fallback from another vendor. Phase 1: start-of-call fallback for all kinds,
+  per-request LLM fallback. Phase 5: mid-call STT/TTS switching.
+- Keys via `CredentialResolver` (platform env keys now; BYOK in Phase 3).
+- Adapters report usage units (STT audio-seconds, LLM tokens, TTS characters) in `call.ended`;
+  prices are applied separately.
+
+## 6a. Call events
+
+Decision 0007. Schema: `packages/shared/events.schema.json`; examples in
+`packages/shared/examples/events/`.
+
+```mermaid
+flowchart LR
+  W[Voice worker<br/>EventEmitter] -- XADD, non-blocking --> R[(Redis Stream<br/>vp:events)]
+  R --> P[EventPersister<br/>consumer group]
+  P -- tenant_session --> E[(call_events, calls)]
+  P -- invalid / wrong org --> D[(vp:events:dead)]
+  E --> UI[Call detail page, analytics, webhooks]
+```
+
+- Envelope `{id, type, v, org_id, call_id, seq, ts, payload}`; types `call.started`, `turn`,
+  `tool_call`, `transfer`, `provider.fallback`, `call.ended`, `extraction.done`.
+- `turn`: one exchange; `user` / `agent` sides may be null; each side has `start_ms` / `end_ms`
+  offsets from call start for syncing to the recording; per-stage `timings`.
+- Card numbers are redacted from free text before an event leaves the producer.
 
 ## 7. Latency budget (targets, to be measured)
 

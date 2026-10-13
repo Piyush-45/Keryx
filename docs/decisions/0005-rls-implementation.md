@@ -16,7 +16,7 @@ that run before the org is known (inbound calls, third-party webhooks, scheduler
 | --- | --- | --- | --- |
 | `vp_migrator` | yes | owns databases and tables; not superuser | Alembic only |
 | `vp_app` | yes | **not superuser, not owner, NOBYPASSRLS**, DML via default privileges, no DDL, no access to `alembic_version` | API and all workers |
-| `vp_resolver` | **no** | BYPASSRLS; owns only the resolver functions below; `SELECT` on exactly the columns they read | added with the first resolver |
+| `vp_resolver` | **no** | BYPASSRLS; owns only the resolver functions below; `SELECT` on exactly the columns they read | provisioned by `scripts/db/init.sql` (see update below) |
 
 Roles are provisioned outside migrations (`scripts/db/init.sql`; secrets manager in real envs).
 Creating a BYPASSRLS role needs a superuser, which migrations never run as.
@@ -80,6 +80,20 @@ other.
 - Isolation tests in `api/tests/tenancy/` run as `vp_app` through `tenant_session`.
 - Catalog guards fail the build if any table lacks ENABLE+FORCE+policy, if an `org_id` table lacks
   the standard policy or `UNIQUE (org_id, id)`, or if `vp_app` gains superuser/BYPASSRLS/ownership.
+
+### Update 2026-10-14: resolver role setup and guard (built)
+- `scripts/db/init.sql` creates `vp_resolver` (NOLOGIN, BYPASSRLS) with `USAGE, CREATE` on `public`
+  (Postgres requires CREATE of a function's new owner) and grants it to `vp_migrator` **WITH INHERIT
+  FALSE, SET TRUE**: the migrator can assign ownership but never holds its privileges implicitly.
+  `vp_app` is never a member (tested).
+- Guard test (`api/tests/tenancy/test_guards.py`): every `SECURITY DEFINER` function in `public`, and
+  every function owned by `vp_resolver`, must be SECURITY DEFINER, owned by `vp_resolver`,
+  `SET search_path = pg_catalog, public` or tighter (`pg_catalog` first; only `public`/`pg_temp`
+  besides; `pg_temp` last), not executable by PUBLIC, and executable by `vp_app`. A self-test
+  creates one compliant and five broken functions in a rolled-back transaction.
+- Resolver migrations therefore: `CREATE FUNCTION ... SECURITY DEFINER SET search_path = pg_catalog,
+  public`, `REVOKE EXECUTE ... FROM PUBLIC`, `GRANT EXECUTE ... TO vp_app`, grant `vp_resolver`
+  SELECT on the columns it reads, then `ALTER FUNCTION ... OWNER TO vp_resolver`.
 
 ## Alternatives considered
 - Per-request `SET` (session-level) — leaks across pooled connections.

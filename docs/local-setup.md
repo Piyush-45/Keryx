@@ -36,6 +36,7 @@ Provision roles and databases (idempotent, safe to re-run):
 | --- | --- | --- |
 | `vp_migrator` | login, owns both databases and all tables, no superuser | Alembic only (`MIGRATION_DATABASE_URL`) |
 | `vp_app` | login, **not superuser, not owner, NOBYPASSRLS**, DML only via default privileges | API and workers (`DATABASE_URL`) |
+| `vp_resolver` | **no login**, BYPASSRLS; `vp_migrator` may `SET ROLE` to it (no inheritance) | owns the narrow resolver functions only (decision 0005) |
 
 Why two roles: superusers and table owners bypass row-level security. The app must connect as a
 role that is neither, or RLS (decision 0002) silently does nothing. Owner-bypass is closed separately
