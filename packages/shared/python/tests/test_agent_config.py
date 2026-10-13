@@ -65,7 +65,7 @@ INVALID_CASES: list[tuple[str, str, Any, str]] = [
     (
         "provider_without_fallback",
         "voice.tts",
-        {"provider": "sarvam:anushka", "fallback": []},
+        {"provider": "sarvam:priya", "fallback": []},
         "should be non-empty",
     ),
     (

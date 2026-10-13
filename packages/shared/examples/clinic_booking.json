@@ -63,7 +63,7 @@
   "voice": {
     "preset": "india-standard",
     "tts": {
-      "provider": "sarvam:anushka",
+      "provider": "sarvam:priya",
       "fallback": [
         "cartesia:hi-female-1"
       ]

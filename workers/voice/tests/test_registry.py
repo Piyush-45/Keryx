@@ -41,7 +41,7 @@ def fake(kind: Any, vendor: str, *, fails: bool = False) -> Adapter:
 
 
 TTS = ProviderChoice.from_json(
-    "tts", {"provider": "sarvam:anushka", "fallback": ["cartesia:v1", "elevenlabs:v2"]}
+    "tts", {"provider": "sarvam:priya", "fallback": ["cartesia:v1", "elevenlabs:v2"]}
 )
 
 
@@ -55,7 +55,7 @@ ALL_KEYS = {"sarvam": "k1", "cartesia": "k2", "elevenlabs": "k3"}
 
 async def test_primary_builds_without_fallback() -> None:
     built, records = await registry(ALL_KEYS).chain("tts", TTS, CTX).build_first()
-    assert str(built.spec) == "sarvam:anushka"
+    assert str(built.spec) == "sarvam:priya"
     assert built.cost_unit == "character"
     assert isinstance(built.service, FakeService)
     assert built.service.api_key == "k1"
@@ -76,7 +76,7 @@ async def test_adapter_error_falls_back() -> None:
     built, records = await reg.chain("tts", TTS, CTX).build_first()
     assert str(built.spec) == "elevenlabs:v2"
     assert [(str(r.from_spec), str(r.to_spec)) for r in records] == [
-        ("sarvam:anushka", "cartesia:v1"),
+        ("sarvam:priya", "cartesia:v1"),
         ("cartesia:v1", "elevenlabs:v2"),
     ]
     assert records[0].detail == "RuntimeError: boom"

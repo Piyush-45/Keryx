@@ -29,14 +29,14 @@
       },
       {
         "kind": "tts",
-        "spec": "sarvam:anushka",
+        "spec": "sarvam:priya",
         "units": {
           "characters": 160
         }
       },
       {
         "kind": "tts",
-        "spec": "elevenlabs:21m00Tcm4TlvDq8ikWAM",
+        "spec": "cartesia:4459a9a5-69d6-4680-b970-e13dc51845b6",
         "units": {
           "characters": 40
         }

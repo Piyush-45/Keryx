@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 from pipecat.processors.frame_processor import FrameProcessor
+from pipecat.services.sarvam.tts import SarvamTTSSpeakerV3
 
 from vp_shared.providers import KINDS, PRESETS, VENDORS, ProviderSpec, resolve_voice
 from worker.providers import BuildContext, default_registry
@@ -17,7 +18,7 @@ SPECS = {
     ("llm", "anthropic"): "anthropic:claude-haiku-5-5",
     ("tts", "cartesia"): "cartesia:voice-1",
     ("tts", "elevenlabs"): "elevenlabs:21m00Tcm4TlvDq8ikWAM",
-    ("tts", "sarvam"): "sarvam:anushka",
+    ("tts", "sarvam"): "sarvam:priya",
 }
 
 
@@ -74,3 +75,24 @@ async def test_settings_reach_the_service(key: tuple[str, str]) -> None:
         assert settings.voice == spec.model
     if kind == "stt" and spec.model:
         assert settings.model == spec.model
+
+
+async def test_sarvam_tts_pins_bulbul_v3() -> None:
+    """Sarvam rejects bulbul:v2; the model must not drift with Pipecat's default."""
+    spec = ProviderSpec.parse("tts", "sarvam:priya")
+    built = await default_registry(DummyKeys()).build_one(
+        spec, BuildContext(org_id=uuid.uuid4(), language="hi-IN")
+    )
+    assert built.service._settings.model == "bulbul:v3"  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize("preset", sorted(PRESETS))
+def test_preset_sarvam_voices_exist_on_bulbul_v3(preset: str) -> None:
+    """Regression: india-standard used `anushka`, a bulbul:v2-only speaker; every call's TTS failed.
+
+    Sarvam retired bulbul:v2, and its voice ids are per model.
+    """
+    v3_speakers = {s.value for s in SarvamTTSSpeakerV3}
+    for spec in resolve_voice({"preset": preset}).tts.chain:
+        if spec.vendor == "sarvam":
+            assert spec.model in v3_speakers, f"{preset}: {spec} is not a bulbul:v3 speaker"

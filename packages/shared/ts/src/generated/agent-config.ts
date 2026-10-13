@@ -176,13 +176,13 @@ export const agentConfigSchema = z
             provider: z
               .string()
               .regex(new RegExp("^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$"))
-              .describe("vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka."),
+              .describe("vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:priya."),
             fallback: z
               .array(
                 z
                   .string()
                   .regex(new RegExp("^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$"))
-                  .describe("vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka."),
+                  .describe("vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:priya."),
               )
               .min(1)
               .refine(

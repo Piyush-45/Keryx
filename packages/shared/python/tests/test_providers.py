@@ -34,7 +34,7 @@ def test_catalog_vendors_match_schema() -> None:
         ("stt", "sarvam", ProviderSpec("stt", "sarvam", None)),
         ("stt", "deepgram:nova-3", ProviderSpec("stt", "deepgram", "nova-3")),
         ("llm", "anthropic:claude-haiku-5-5", ProviderSpec("llm", "anthropic", "claude-haiku-5-5")),
-        ("tts", "sarvam:anushka", ProviderSpec("tts", "sarvam", "anushka")),
+        ("tts", "sarvam:priya", ProviderSpec("tts", "sarvam", "priya")),
     ],
 )
 def test_parse_round_trip(kind: str, spec: str, expected: ProviderSpec) -> None:
@@ -65,7 +65,7 @@ def test_presets_are_valid_and_fallbacks_use_other_vendors(name: str) -> None:
 
 
 def test_explicit_kinds_override_preset() -> None:
-    tts = {"provider": "cartesia:voice-1", "fallback": ["sarvam:anushka"]}
+    tts = {"provider": "cartesia:voice-1", "fallback": ["sarvam:priya"]}
     resolved = resolve_voice({"preset": "india-standard", "tts": tts})
     assert resolved.tts.to_json() == tts
     assert resolved.stt == ProviderChoice.from_json("stt", PRESETS["india-standard"]["stt"])

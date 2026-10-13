@@ -18,7 +18,7 @@
     "providers": {
       "stt": "sarvam",
       "llm": "openai:gpt-4.1-mini",
-      "tts": "sarvam:anushka"
+      "tts": "sarvam:priya"
     }
   }
 }

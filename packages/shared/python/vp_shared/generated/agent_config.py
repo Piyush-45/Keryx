@@ -121,7 +121,7 @@ class TtsSpec(RootModel[str]):
     root: Annotated[
         str,
         Field(
-            description="vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka.",
+            description="vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:priya.",
             pattern="^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$",
         ),
     ]
@@ -163,7 +163,7 @@ class TtsChoice(BaseModel):
     provider: Annotated[
         str,
         Field(
-            description="vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka.",
+            description="vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:priya.",
             pattern="^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$",
         ),
     ]

@@ -253,7 +253,7 @@
       "pattern": "^(openai|gemini|anthropic)(:[A-Za-z0-9._/@-]+)?$"
     },
     "ttsSpec": {
-      "description": "vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:anushka.",
+      "description": "vendor:voice-id, e.g. cartesia:<voice-id>, sarvam:priya.",
       "type": "string",
       "pattern": "^(cartesia|elevenlabs|sarvam):[A-Za-z0-9._/@-]+$"
     },

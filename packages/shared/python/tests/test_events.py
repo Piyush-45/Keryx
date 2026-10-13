@@ -108,7 +108,7 @@ INVALID: list[tuple[str, str, str, Any, str]] = [
         "usage_unit_for_wrong_kind",
         "call_ended",
         "payload.usage",
-        [{"kind": "tts", "spec": "sarvam:anushka", "units": {"input_tokens": 5}}],
+        [{"kind": "tts", "spec": "sarvam:priya", "units": {"input_tokens": 5}}],
         "tts cannot report input_tokens",
     ),
 ]

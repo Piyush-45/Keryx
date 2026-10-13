@@ -102,7 +102,10 @@ PRESETS: dict[str, dict[str, Any]] = {
     "india-standard": {
         "stt": {"provider": "sarvam", "fallback": ["deepgram:nova-3"]},
         "llm": {"provider": "openai:gpt-4.1-mini", "fallback": ["gemini:gemini-2.5-flash"]},
-        "tts": {"provider": "sarvam:anushka", "fallback": ["elevenlabs:21m00Tcm4TlvDq8ikWAM"]},
+        "tts": {
+            "provider": "sarvam:priya",
+            "fallback": ["cartesia:4459a9a5-69d6-4680-b970-e13dc51845b6"],
+        },
     },
 }
 

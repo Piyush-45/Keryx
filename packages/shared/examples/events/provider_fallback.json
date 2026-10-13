@@ -8,8 +8,8 @@
   "ts": "2026-10-13T10:00:04.000000+00:00",
   "payload": {
     "kind": "tts",
-    "from_spec": "sarvam:anushka",
-    "to_spec": "elevenlabs:21m00Tcm4TlvDq8ikWAM",
+    "from_spec": "sarvam:priya",
+    "to_spec": "cartesia:4459a9a5-69d6-4680-b970-e13dc51845b6",
     "reason": "error",
     "detail": "websocket closed",
     "at_ms": 9700
