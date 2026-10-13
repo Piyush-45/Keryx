@@ -6,7 +6,7 @@ Assumes one full-time builder with AI-assisted coding. Tick boxes as work lands.
 ## Phase 0 — System design (weeks 1–2)
 - [ ] Pick 1–2 launch industries; list 15–20 target businesses
 - [ ] Architecture written (docs/architecture.md) and reviewed
-- [ ] Tenant model + Postgres RLS design
+- [x] Tenant model + Postgres RLS design
 - [x] Agent config JSON Schema (versioned)
 - [ ] Provider registry interface + fallback order
 - [ ] Call event model
