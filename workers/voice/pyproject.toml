@@ -3,7 +3,12 @@ name = "vp-worker-voice"
 version = "0.0.0"
 description = "Pipecat call workers: build the pipeline from agent config at call start."
 requires-python = ">=3.12,<3.13"
-dependencies = ["vp-shared", "vp-db"]
+dependencies = [
+    "vp-shared",
+    "vp-db",
+    # Vendor SDKs come in through Pipecat extras and are imported only in worker/providers/adapters/.
+    "pipecat-ai[deepgram,sarvam,openai,google,anthropic,cartesia,elevenlabs]>=1.12,<2",
+]
 
 [tool.uv.sources]
 vp-shared = { workspace = true }
