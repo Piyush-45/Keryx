@@ -1,13 +1,24 @@
 {
   "schema_version": "1",
-  "language": ["hi-IN", "en-IN"],
+  "language": [
+    "hi-IN",
+    "en-IN"
+  ],
   "persona": {
     "name": "Asha",
     "prompt": "You are Asha, the front-desk assistant for {clinic_name}. Speak politely in the caller's language (Hindi, English or Hinglish). Keep replies short: one or two sentences. Never give medical advice."
   },
   "variables": [
-    { "name": "clinic_name", "required": true, "description": "Clinic display name" },
-    { "name": "patient_name", "default": "", "description": "Patient name if known" }
+    {
+      "name": "clinic_name",
+      "required": true,
+      "description": "Clinic display name"
+    },
+    {
+      "name": "patient_name",
+      "default": "",
+      "description": "Patient name if known"
+    }
   ],
   "greeting": "Namaste {patient_name}, main {clinic_name} se Asha bol rahi hoon. Aapki kya madad kar sakti hoon?",
   "flow": {
@@ -16,25 +27,47 @@
       {
         "id": "identify_need",
         "task_prompt": "Find out whether the caller wants to book, reschedule or cancel an appointment, or has another question.",
-        "next": ["book", "reschedule"]
+        "next": [
+          "book",
+          "reschedule"
+        ]
       },
       {
         "id": "book",
         "task_prompt": "Collect preferred date and time, check availability, offer up to three slots, confirm one, then read back the booking.",
-        "tools": ["check_slots", "book_slot", "lookup_patient", "end_call"],
-        "next": ["identify_need"]
+        "tools": [
+          "check_slots",
+          "book_slot",
+          "lookup_patient",
+          "end_call"
+        ],
+        "next": [
+          "identify_need"
+        ]
       },
       {
         "id": "reschedule",
         "task_prompt": "Find the existing appointment, offer new slots and confirm the change.",
-        "tools": ["lookup_patient", "check_slots", "reschedule_slot", "end_call"],
-        "next": ["identify_need"]
+        "tools": [
+          "lookup_patient",
+          "check_slots",
+          "reschedule_slot",
+          "end_call"
+        ],
+        "next": [
+          "identify_need"
+        ]
       }
     ]
   },
   "voice": {
     "preset": "india-standard",
-    "tts": { "provider": "sarvam:anushka", "fallback": ["cartesia:hi-female-1"] }
+    "tts": {
+      "provider": "sarvam:anushka",
+      "fallback": [
+        "cartesia:hi-female-1"
+      ]
+    }
   },
   "tools": [
     {
@@ -67,10 +100,18 @@
       "method": "POST",
       "parameters": {
         "type": "object",
-        "properties": { "phone": { "type": "string" } },
-        "required": ["phone"]
+        "properties": {
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone"
+        ]
       },
-      "auth": { "integration_id": "0b7d6c5a-1e2f-4a3b-8c9d-0e1f2a3b4c5d" },
+      "auth": {
+        "integration_id": "0b7d6c5a-1e2f-4a3b-8c9d-0e1f2a3b4c5d"
+      },
       "timeout_ms": 3000
     },
     {
@@ -88,10 +129,16 @@
     "when": "caller asks for a human, a doctor, or describes an emergency",
     "mode": "warm"
   },
-  "turn": { "allow_barge_in": true, "end_of_turn_ms": 250 },
+  "turn": {
+    "allow_barge_in": true,
+    "end_of_turn_ms": 250
+  },
   "recording": {
     "enabled": true,
-    "disclosure_line": "Yeh call quality ke liye record ki ja rahi hai."
+    "disclosure_line": "Yeh call quality aur training ke liye record ki ja rahi hai. This call is recorded for quality and training."
   },
-  "limits": { "max_call_seconds": 600, "silence_timeout_s": 8 }
+  "limits": {
+    "max_call_seconds": 600,
+    "silence_timeout_s": 8
+  }
 }
