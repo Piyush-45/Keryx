@@ -1,3 +1,7 @@
 packages:
   - "dashboard"
   - "packages/shared/ts"
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
