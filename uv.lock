@@ -2381,10 +2381,26 @@ dependencies = [
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "alembic" },
+    { name = "pydantic-settings" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.35" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "pydantic-settings", specifier = ">=2.5" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
 ]
 
 [[package]]
@@ -2436,15 +2452,25 @@ name = "vp-worker-postcall"
 version = "0.0.0"
 source = { editable = "workers/postcall" }
 dependencies = [
+    { name = "redis" },
     { name = "vp-db" },
     { name = "vp-shared" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fakeredis" },
+]
+
 [package.metadata]
 requires-dist = [
+    { name = "redis", specifier = ">=5.2" },
     { name = "vp-db", editable = "packages/db" },
     { name = "vp-shared", editable = "packages/shared/python" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fakeredis", specifier = ">=2.26" }]
 
 [[package]]
 name = "vp-worker-voice"

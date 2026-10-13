@@ -8,10 +8,9 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 
-from vp_db.models import Membership, Organization, User
+from vp_db.models import Call, CallEventRow, Membership, Organization, User
 from vp_db.session import create_engine, create_sessionmaker, tenant_session
-
-from .conftest import DbTestSettings, add_member, make_org
+from vp_db.testing import DbTestSettings, add_member, make_call, make_org
 
 SM = async_sessionmaker[AsyncSession]
 RLS_VIOLATION = "row-level security policy"
@@ -214,3 +213,23 @@ async def test_enable_tenant_rls_helper_isolates_new_tables(
             await s.execute(text("SELECT count(*) FROM _rls_parent WHERE org_id = :b"), {"b": b})
         ).scalar_one()
     assert visible == 0
+
+
+# --- calls and call events ---
+
+
+async def test_calls_and_events_are_isolated(sessionmaker: SM) -> None:
+    a, b = await make_org(sessionmaker), await make_org(sessionmaker)
+    call_b = await make_call(sessionmaker, b)
+    async with tenant_session(sessionmaker, a) as s:
+        assert await _count(s, Call) == 0
+        assert await _count(s, CallEventRow) == 0
+    with pytest.raises(IntegrityError, match="fk_call_events_org_id_call_id_calls"):
+        async with tenant_session(sessionmaker, a) as s:
+            await s.execute(
+                text(
+                    "INSERT INTO call_events (id, org_id, call_id, seq, type, v, ts, payload)"
+                    " VALUES (:id, :org, :call, 0, 'turn', 1, now(), '{}')"
+                ),
+                {"id": uuid.uuid4(), "org": a, "call": call_b},
+            )
