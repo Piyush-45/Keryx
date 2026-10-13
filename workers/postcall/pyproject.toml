@@ -3,10 +3,11 @@ name = "vp-worker-postcall"
 version = "0.0.0"
 description = "Post-call jobs: transcript, extraction, dispositions, CRM write-back, webhooks."
 requires-python = ">=3.12,<3.13"
-dependencies = ["vp-shared"]
+dependencies = ["vp-shared", "vp-db"]
 
 [tool.uv.sources]
 vp-shared = { workspace = true }
+vp-db = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

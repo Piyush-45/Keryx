@@ -1,4 +1,4 @@
-PY_PACKAGES := api workers/voice workers/postcall workers/campaigns packages/shared/python
+PY_PACKAGES := api workers/voice workers/postcall workers/campaigns packages/shared/python packages/db
 
 .PHONY: sync lint format typecheck test check codegen codegen-check
 

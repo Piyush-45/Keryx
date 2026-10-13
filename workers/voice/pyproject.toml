@@ -3,10 +3,11 @@ name = "vp-worker-voice"
 version = "0.0.0"
 description = "Pipecat call workers: build the pipeline from agent config at call start."
 requires-python = ">=3.12,<3.13"
-dependencies = ["vp-shared"]
+dependencies = ["vp-shared", "vp-db"]
 
 [tool.uv.sources]
 vp-shared = { workspace = true }
+vp-db = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
