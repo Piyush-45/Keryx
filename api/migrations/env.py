@@ -3,17 +3,20 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import vp_db.models  # noqa: F401  (registers models on Base.metadata)
 from app.settings import get_settings
+from vp_db.base import Base
 
 config = context.config
-# Migrations run as the owner role, never as the app role.
-config.set_main_option("sqlalchemy.url", get_settings().migration_database_url)
+# Migrations run as the owner role (vp_migrator), never as the app role.
+# Callers (e.g. tests targeting vp_test) may preset sqlalchemy.url on the Config.
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", get_settings().migration_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set to the declarative Base.metadata once models exist.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
